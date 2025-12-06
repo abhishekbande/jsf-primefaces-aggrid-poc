@@ -1,0 +1,389 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:h="http://xmlns.jcp.org/jsf/html"
+      xmlns:f="http://xmlns.jcp.org/jsf/core"
+      xmlns:p="http://primefaces.org/ui"
+      xmlns:ui="http://xmlns.jcp.org/jsf/facelets">
+
+<h:head>
+    <title>Segmentation - POC JSF Application</title>
+    <h:outputStylesheet name="css/style.css"/>
+    
+    <!-- AG Grid CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@30.2.0/styles/ag-grid.css"/>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@30.2.0/styles/ag-theme-alpine.css"/>
+    
+    <!-- AG Grid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/ag-grid-community@30.2.0/dist/ag-grid-community.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+</h:head>
+
+<h:body>
+    <div class="app-container">
+        <!-- Header Navigation -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="logo">
+                    <i class="pi pi-file" style="color: #333; font-size: 18px;"></i>
+                </div>
+                <button class="btn-data-load">
+                    <i class="pi pi-upload"></i>
+                    <span>Data Load</span>
+                </button>
+                <div class="dataset-nav-dropdown">
+                    <select class="nav-select">
+                        <option>Dataset 1</option>
+                        <option>Dataset 2</option>
+                    </select>
+                    <i class="pi pi-chevron-down dropdown-icon"></i>
+                </div>
+                <button class="btn-nav">
+                    <i class="pi pi-history"></i>
+                    <span>History</span>
+                </button>
+                <button class="btn-nav">
+                    <i class="pi pi-chart-line"></i>
+                    <span>Forecasting</span>
+                </button>
+                <button class="btn-nav">
+                    <i class="pi pi-th-large"></i>
+                    <span>Composition</span>
+                </button>
+            </div>
+            <div class="header-right">
+                <button class="btn-segmentation">
+                    <i class="pi pi-sitemap"></i>
+                    <span>Segmentation</span>
+                </button>
+                <button class="btn-nav">
+                    <i class="pi pi-database"></i>
+                    <span>Manage Datasets</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Sub Header -->
+        <div class="sub-header">
+            <div class="dataset-info">
+                <span class="label-icon">
+                    <i class="pi pi-table"></i>
+                </span>
+                <span class="label">Dataset</span>
+                <div class="dataset-select-wrapper">
+                    <select class="dataset-select">
+                        <option>DATACOI3.csv</option>
+                        <option>DATACOI2.csv</option>
+                    </select>
+                    <i class="pi pi-chevron-down"></i>
+                </div>
+            </div>
+            <div class="cutoff-date">
+                <span class="label">Cut Off Date:</span>
+                <div class="date-input-wrapper">
+                    <input type="text" value="31 July 2024" class="date-input" readonly="readonly"/>
+                    <i class="pi pi-calendar"></i>
+                </div>
+            </div>
+        </div>
+
+        <h:form id="mainForm">
+            <p:growl id="growl" showDetail="true" life="3000"/>
+            
+            <div class="main-content">
+                <!-- Left Panel: Add to Selection -->
+                <div class="left-panel">
+                    <h2 class="panel-title">Add to Selection</h2>
+                    
+                    <div class="tab-buttons">
+                        <button type="button" class="tab-btn active">Fields</button>
+                        <button type="button" class="tab-btn">Segments</button>
+                    </div>
+                    
+                    <div class="search-box">
+                        <p:inputText value="#{segmentationBean.searchText}" 
+                                    placeholder="Search..."
+                                    styleClass="search-input">
+                            <p:ajax event="keyup" listener="#{segmentationBean.filterFields}" 
+                                   update=":mainForm:fieldsList" delay="300"/>
+                        </p:inputText>
+                        <i class="pi pi-search search-icon"></i>
+                    </div>
+                    
+                    <p:outputPanel id="fieldsList">
+                        <ul class="fields-list">
+                            <ui:repeat value="#{segmentationBean.filteredFields}" var="field">
+                                <li class="field-item #{segmentationBean.selectedField != null and segmentationBean.selectedField.name eq field.name ? 'selected' : ''}">
+                                    <p:commandLink styleClass="field-link"
+                                                  action="#{segmentationBean.selectField(field)}"
+                                                  update=":mainForm:fieldsList :mainForm:growl"
+                                                  process="@this">
+                                        <h:outputText value="#{field.displayName}"/>
+                                    </p:commandLink>
+                                </li>
+                            </ui:repeat>
+                        </ul>
+                    </p:outputPanel>
+                </div>
+
+                <!-- Middle Panel: Selected Segments -->
+                <div class="middle-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Selected Segments</h2>
+                        <div class="segment-actions">
+                            <p:commandButton icon="pi pi-trash" styleClass="action-btn danger"
+                                           action="#{segmentationBean.clearAllSegments}"
+                                           update=":mainForm:segmentsPanel :mainForm:growl"
+                                           title="Clear All"/>
+                            <p:commandButton icon="pi pi-copy" styleClass="action-btn"
+                                           title="Copy"/>
+                            <p:commandButton icon="pi pi-plus" styleClass="action-btn primary"
+                                           action="#{segmentationBean.addNewSegment}"
+                                           update=":mainForm:segmentsPanel :mainForm:growl"
+                                           title="Add Segment"/>
+                        </div>
+                    </div>
+                    
+                    <div class="segment-group-wrapper">
+                        <select class="segment-group-dropdown">
+                            <option>Segment Group 1</option>
+                        </select>
+                        <i class="pi pi-chevron-down"></i>
+                    </div>
+                    
+                    <p:outputPanel id="segmentsPanel">
+                        <div class="segments-wrapper">
+                            <div class="segment-toolbar">
+                                <p:commandButton styleClass="toolbar-btn" title="Copy"
+                                               icon="pi pi-file"
+                                               update=":mainForm:growl"
+                                               onclick="PF('growl').renderMessage({summary:'Info', detail:'Copy feature', severity:'info'}); return false;"/>
+                                <p:commandButton styleClass="toolbar-btn" title="Move"
+                                               icon="pi pi-arrows-alt"
+                                               update=":mainForm:growl"
+                                               onclick="PF('growl').renderMessage({summary:'Info', detail:'Move feature', severity:'info'}); return false;"/>
+                                <p:commandButton styleClass="toolbar-btn" title="Duplicate"
+                                               icon="pi pi-clone"
+                                               action="#{segmentationBean.duplicateSegment(segmentationBean.segments[0])}"
+                                               update=":mainForm:segmentsPanel :mainForm:growl"/>
+                                <p:commandButton styleClass="toolbar-btn toolbar-btn-danger" title="Delete Selected"
+                                               icon="pi pi-trash"
+                                               update=":mainForm:growl"
+                                               onclick="PF('growl').renderMessage({summary:'Info', detail:'Click X on segment header to delete', severity:'info'}); return false;"/>
+                                <p:commandButton styleClass="toolbar-btn" title="Collapse All"
+                                               action="#{segmentationBean.collapseAllSegments}"
+                                               update=":mainForm:segmentsPanel"
+                                               icon="pi pi-minus"/>
+                            </div>
+                            
+                            <div class="segments-container">
+                                <ui:repeat value="#{segmentationBean.segments}" var="segment">
+                                    <div class="segment-card">
+                                        <div class="segment-header">
+                                            <p:commandLink action="#{segmentationBean.toggleSegment(segment)}"
+                                                          update=":mainForm:segmentsPanel"
+                                                          process="@this"
+                                                          styleClass="segment-toggle">
+                                                <span class="segment-name">#{segment.name}</span>
+                                                <i class="pi #{segment.expanded ? 'pi-chevron-up' : 'pi-chevron-down'}"></i>
+                                            </p:commandLink>
+                                            <p:commandLink action="#{segmentationBean.removeSegment(segment)}"
+                                                          update=":mainForm:segmentsPanel :mainForm:growl"
+                                                          process="@this"
+                                                          styleClass="delete-segment-btn"
+                                                          title="Delete Segment">
+                                                <i class="pi pi-times"></i>
+                                            </p:commandLink>
+                                        </div>
+                                        
+                                        <ui:fragment rendered="#{segment.expanded}">
+                                            <div class="segment-content">
+                                                <ul class="segment-fields">
+                                                    <ui:repeat value="#{segment.fields}" var="segField">
+                                                        <li class="segment-field-item">
+                                                            <span class="field-name">#{segField.displayName}</span>
+                                                            <div class="field-actions">
+                                                                <i class="pi pi-sliders-h" title="Configure"></i>
+                                                                <p:commandLink action="#{segmentationBean.removeFieldFromSegment(segment, segField)}"
+                                                                              update=":mainForm:segmentsPanel :mainForm:growl"
+                                                                              process="@this"
+                                                                              styleClass="remove-link">
+                                                                    <i class="pi pi-minus remove-btn" title="Remove"></i>
+                                                                </p:commandLink>
+                                                            </div>
+                                                        </li>
+                                                    </ui:repeat>
+                                                </ul>
+                                                <div class="add-field-row">
+                                                    <span class="add-field-text">Search for field to add</span>
+                                                    <p:commandLink action="#{segmentationBean.addFieldToSegment(segment.id)}"
+                                                                  update=":mainForm:segmentsPanel :mainForm:fieldsList :mainForm:growl"
+                                                                  process="@this"
+                                                                  styleClass="add-link">
+                                                        <i class="pi pi-plus add-btn" title="Add selected field"></i>
+                                                    </p:commandLink>
+                                                </div>
+                                            </div>
+                                            <div class="segment-footer">
+                                                <span class="saved-label">Saved</span>
+                                            </div>
+                                        </ui:fragment>
+                                    </div>
+                                </ui:repeat>
+                            </div>
+                        </div>
+                    </p:outputPanel>
+                </div>
+
+                <!-- Right Panel: Report Preview with AG Grid -->
+                <div class="right-panel">
+                    <div class="report-header">
+                        <h2 class="panel-title">Report Preview</h2>
+                        <div class="report-controls">
+                            <div class="toggle-wrapper">
+                                <span class="toggle-label">Include Empty Segments</span>
+                                <label class="switch">
+                                    <input type="checkbox" checked="checked"/>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="toggle-wrapper">
+                                <span class="toggle-label">Auto Refresh</span>
+                                <label class="switch">
+                                    <input type="checkbox" checked="checked"/>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <button type="button" class="btn-download">DOWNLOAD</button>
+                        </div>
+                    </div>
+                    
+                    <!-- AG Grid Container 1 -->
+                    <div id="loanDataGrid" class="ag-theme-alpine grid-container"></div>
+                    
+                    <!-- AG Grid Container 2 -->
+                    <div id="loanDataGrid2" class="ag-theme-alpine grid-container grid-second"></div>
+                </div>
+            </div>
+        </h:form>
+    </div>
+
+    <!-- AG Grid Initialization Script -->
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Column Definitions matching the image
+            const columnDefs = [
+                { 
+                    field: 'currentInterestRate', 
+                    headerName: 'Current Interest Ra...', 
+                    width: 160,
+                    cellRenderer: function(params) {
+                        if (params.value) {
+                            return '<span class="cell-expand"><i class="expand-icon">▼</i> ' + params.value + '</span>';
+                        }
+                        return '';
+                    }
+                },
+                { 
+                    field: 'delinquencyDescription', 
+                    headerName: 'Delinquency Descri...', 
+                    width: 170,
+                    cellRenderer: function(params) {
+                        if (params.value) {
+                            return '<span class="cell-expand"><i class="expand-icon">▼</i> ' + params.value + '</span>';
+                        }
+                        return '';
+                    }
+                },
+                { 
+                    field: 'escrowBalance', 
+                    headerName: 'Escrow Balance', 
+                    width: 130,
+                    cellRenderer: function(params) {
+                        return params.value || '';
+                    }
+                },
+                { 
+                    field: 'activeLoanCount', 
+                    headerName: 'Active Loan Count', 
+                    width: 150,
+                    type: 'numericColumn',
+                    cellStyle: { textAlign: 'right' },
+                    valueFormatter: function(params) {
+                        if (params.value) {
+                            return params.value.toLocaleString();
+                        }
+                        return '';
+                    }
+                },
+                { 
+                    field: 'currUPB', 
+                    headerName: 'Curr UPB', 
+                    flex: 1,
+                    type: 'numericColumn',
+                    cellStyle: { textAlign: 'right' },
+                    valueFormatter: function(params) {
+                        if (params.value) {
+                            return params.value.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                        }
+                        return '';
+                    }
+                }
+            ];
+
+            // Sample Row Data matching the image
+            const rowData = [
+                { currentInterestRate: '3.00-4.50', delinquencyDescription: null, escrowBalance: null, activeLoanCount: 961, currUPB: 363098387.00 },
+                { currentInterestRate: null, delinquencyDescription: '30 Days+', escrowBalance: null, activeLoanCount: 18, currUPB: 5959948.00 },
+                { currentInterestRate: null, delinquencyDescription: null, escrowBalance: '>0.00', activeLoanCount: 18, currUPB: 5959948.00 },
+                { currentInterestRate: null, delinquencyDescription: '60 Days+', escrowBalance: null, activeLoanCount: 12, currUPB: 4137723.00 },
+                { currentInterestRate: null, delinquencyDescription: null, escrowBalance: '>0.00', activeLoanCount: 12, currUPB: 4137723.00 },
+                { currentInterestRate: null, delinquencyDescription: '90 Days+', escrowBalance: null, activeLoanCount: 1, currUPB: 293172.00 },
+                { currentInterestRate: null, delinquencyDescription: null, escrowBalance: '>0.00', activeLoanCount: 1, currUPB: 293172.00 },
+                { currentInterestRate: null, delinquencyDescription: 'Current', escrowBalance: null, activeLoanCount: 930, currUPB: 352707544.00 },
+                { currentInterestRate: null, delinquencyDescription: null, escrowBalance: '>0.00', activeLoanCount: 930, currUPB: 352707544.00 }
+            ];
+
+            // Grid Options
+            const gridOptions = {
+                columnDefs: columnDefs,
+                rowData: rowData,
+                defaultColDef: {
+                    sortable: true,
+                    resizable: true
+                },
+                rowSelection: 'single',
+                animateRows: true,
+                headerHeight: 40,
+                rowHeight: 35
+            };
+
+            // Initialize Grid 1
+            const gridDiv1 = document.querySelector('#loanDataGrid');
+            if (gridDiv1) {
+                new agGrid.Grid(gridDiv1, gridOptions);
+            }
+
+            // Initialize Grid 2 with same data
+            const gridOptions2 = {
+                columnDefs: columnDefs,
+                rowData: rowData,
+                defaultColDef: {
+                    sortable: true,
+                    resizable: true
+                },
+                rowSelection: 'single',
+                animateRows: true,
+                headerHeight: 40,
+                rowHeight: 35
+            };
+            const gridDiv2 = document.querySelector('#loanDataGrid2');
+            if (gridDiv2) {
+                new agGrid.Grid(gridDiv2, gridOptions2);
+            }
+        });
+    </script>
+</h:body>
+</html>
